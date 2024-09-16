@@ -1,5 +1,5 @@
 import { Route, RouteMethods } from '../../../../base/Route'
-import { useHasPermissionInApp } from '../../../../middlewares/userHasPermissionInApp'
+import { userHasPermissionInApp } from '../../../../middlewares/userHasPermissionInApp'
 
 export default class ApplicationsGetByIdRoute extends Route {
     protected path: string = '/:appId'
@@ -8,16 +8,28 @@ export default class ApplicationsGetByIdRoute extends Route {
     constructor () {
         super({
             middlewares: [
-                useHasPermissionInApp()
+                userHasPermissionInApp()
             ]
         })
     }
 
     init () {
         this.router.use<{appId: string}>('/', (req, res) => {
-            this.dd.controllers.applications.getById(Number(req.params.appId))
+            this.dd.controllers.applications.getById(Number(req.params.appId), {
+                id: true,
+                name: true,
+                secretKey: true,
+                ApplicationRedirectUrlAllowed: {
+                    select: {
+                        id: true,
+                        url: true,
+                        createdAt: true
+                    }
+                }
+            })
                 .then((app) => {
                     if (app.code === 200) {
+                        app.data.id = app.data.id?.toString() as any
                         res.json(app.data)
                     } else {
                         res.status(app.code).json({ message: app.message })
